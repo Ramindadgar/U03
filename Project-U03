@@ -1,0 +1,187 @@
+import sqlite3
+
+
+class GuestBook:
+    connection = sqlite3.connect('guest_project.db')
+
+    create_guest_table = """
+    CREATE TABLE IF NOT EXISTS guest
+    (
+    id integer primary key AUTOINCREMENT ,
+    first_name varchar not null,
+    last_name varchar not null,
+    message varchar not null,
+    status bool default TRUE
+    );
+    """
+
+    insert_note = """
+    INSERT INTO guest
+    (first_name, last_name, message)
+    values
+    ('{first_name}', '{last_name}', '{message}');
+"""
+
+    get_all_not_by_name = """
+    SELECT id, message FROM guest
+    where first_name = '{first_name}' and last_name = '{last_name}';
+    """
+
+    get_all_not = """
+    SELECT * FROM guest;
+"""
+
+    update_message = """
+    UPDATE guest SET message = '{message}' where id = '{guest_id}';
+    """
+
+    delete_message = """
+    DELETE FROM guest where id = '{guest_id}';
+    """
+
+    def __init__(self, first_name, last_name):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.database_execute(self.create_guest_table)
+
+    def database_execute(self, query):
+        self.connection.execute(query)
+
+def input_validation(text:str):
+    if len(text) < 2:
+        return False
+    if text.isnumeric():
+        return False
+    return True
+
+while True:
+    first_name = input('plz enter your first_name: ')
+    if not input_validation(first_name):
+        print('your name must be more than 2 char and not be numeric')
+        continue
+    last_name = input('plz enter your last_name: ')
+    if not input_validation(last_name):
+        print('your name must be more than 2 char and not be numeric')
+        continue
+    break
+
+guest_book = GuestBook(first_name, last_name)
+
+while True:
+    print("*" * 50)
+    print(f"USER: {guest_book.first_name} {guest_book.last_name}")
+    print("PLEASE SELECT FROM MENU: ")
+    print("1- add NOTE: ")
+    print("2- edit NOTE: ")
+    print("3- delete NOTE: ")
+    print("4- show all NOTE: ")
+    print("5- exit")
+    selected_menu = input()
+    if selected_menu in ['1', '2', '3', '4', '5']:
+        if selected_menu == '1':
+            user_note = input('enter your note: ')
+            query = guest_book.insert_note.format(
+                first_name=guest_book.first_name,
+                last_name=guest_book.last_name,
+                message=user_note)
+            try:
+                guest_book.database_execute(query)
+                guest_book.connection.commit()
+                print('your note was Wrote.')
+
+            except Exception as ex:
+                print('somthing is Wrong')
+                # print(ex)
+            continue
+
+        if selected_menu == '2':
+            query = guest_book.get_all_not_by_name.format(
+                first_name=guest_book.first_name,
+                last_name=guest_book.last_name)
+            cursor = guest_book.connection.cursor()
+            cursor.execute(query)
+            all_message = cursor.fetchall()
+            if all_message:
+                print('plz select from menu: ')
+                range_messages = []
+                for item in all_message:
+                    print(f'{item[0]}- {item[1]}')
+                    range_messages.append(str(item[0]))
+                selected_message = input()
+                if selected_message in range_messages:
+                    new_message = input('enter your new message: ')
+                    query = guest_book.update_message.format(
+                        guest_id=selected_message,
+                        message=new_message
+                    )
+                    try:
+                        guest_book.database_execute(query)
+                        guest_book.connection.commit()
+                        print('your note was UPDATED.')
+
+                    except Exception as ex:
+                        print('somthing is Wrong')
+                        # print(ex)
+                    continue
+                else:
+                    print('this selected message is wrong')
+                continue
+
+
+
+
+            else:
+                print('there is no message.')
+
+        if selected_menu == '3':
+            query = guest_book.get_all_not_by_name.format(
+                first_name=guest_book.first_name,
+                last_name=guest_book.last_name)
+            cursor = guest_book.connection.cursor()
+            cursor.execute(query)
+            all_message = cursor.fetchall()
+            if all_message:
+                print('plz select from menu: ')
+                range_messages = []
+                for item in all_message:
+                    print(f'{item[0]}- {item[1]}')
+                    range_messages.append(str(item[0]))
+                selected_message = input()
+                if selected_message in range_messages:
+                    query = guest_book.delete_message.format(
+                        guest_id=selected_message
+                    )
+                    try:
+                        guest_book.database_execute(query)
+                        guest_book.connection.commit()
+                        print('your note was DELETED.')
+
+                    except Exception as ex:
+                        print('somthing is Wrong')
+                        # print(ex)
+                    continue
+                else:
+                    print('this selected message is wrong')
+                continue
+
+        if selected_menu == '4':
+            query = guest_book.get_all_not
+            cursor = guest_book.connection.cursor()
+            cursor.execute(query)
+            all_message = cursor.fetchall()
+            if all_message:
+                index = 1
+                for item in all_message:
+                    print(f'{index}- name: {item[1]} {item[2]} -> message: {item[3]}')
+                    index += 1
+                print('this is your all notes')
+            else:
+                print('there is not any note.')
+            continue
+
+        if selected_menu == '5':
+            guest_book.connection.close()
+            break
+    else:
+        print('wrong input plz select from 1 to 5')
+        continue
